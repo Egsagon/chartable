@@ -1,0 +1,49 @@
+#!/usr/bin/python3
+
+import json
+import pyperclip
+import subprocess
+
+def gum(*args) -> str:
+    '''
+    Communicate with gum.
+    '''
+    
+    res = subprocess.run(['gum'] + list(args), stdout=subprocess.PIPE, text=True)
+    return res.stdout.strip()
+
+def sort_base(base: dict, cats: dict) -> list[str]:
+    '''
+    Sort the database using preferencies.
+    '''
+    
+    saved = [e[0] for e in sorted(list(cats.items()),
+             key = lambda l: l[1], reverse = 1)]
+    
+    return saved + list(base.keys())
+
+# Load bases
+base = json.load(open('/home/egsyle/docs/utf/data.json'))
+pref = json.load(open('/home/egsyle/docs/utf/pref.json'))
+
+sep = '\033[96m  ⇒  \033[0m'
+
+# Ask for a category
+print(' * Choose a category:')
+cat = gum('choose', *sort_base(base, pref))
+
+# Save cat
+if cat in pref.keys(): pref[cat] += 1
+else: pref[cat] = 1
+
+# Display table
+print(f' * Listing \033[92m{cat}\033[0m:')
+table = map(sep.join, base[cat])
+char, desc = gum('choose', *table).split(sep)
+
+# Save to clipboard
+pyperclip.copy(char)
+print(f' * Copied \033[93m{char}\033[0m ({desc.lower()})!')
+
+# Save prefs
+open('pref.json', 'w').write(json.dumps(pref, indent = 3))
